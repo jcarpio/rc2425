@@ -33,3 +33,20 @@ natural(N):- N > 1, N2 is N-1, natural(N2).
  A -> B
  B :- A.
 */
+/*
+
+natural(1).
+natural(N):-  N > 1, N2 is N-1, natural(N2).
+% Si natural(n-1) -> natural(n) 
+
+
+
+
+    5? -> 4? -> 3? -> 2? -> 1?	
+    Si!!<-Si!!<-Si! <-Si!!<-Si!!     
+
+    -5
+	
+	4.5?  3.5?  2.5?  1.5?  0.5?
+	 No!   No!   No!   No! No!!!
+*/
