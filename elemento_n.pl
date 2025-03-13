@@ -18,3 +18,11 @@ elemento_n([_|Resto], N, R):-
     N > 1,
     N2 is N-1,
     elemento_n(Resto, N2, R).
+
+/*
+
+elemento_n([1,2,3,4,5], 3, R).
+
+elemento_n([2,3,4,5], 2, R).
+
+*/
