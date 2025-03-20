@@ -11,6 +11,17 @@ comprime([Cabeza | Resto], [(Cabeza, N) | R]) :-
   vecesRepetido(Cabeza, Resto, N, Resto2), 
   comprime(Resto2, R).
 
+/*
+
+vescesReperidos(Elem, Lista, N, R) 
+Esto es cierto cuando R unifica con una lista 
+que contiene los elementos de lista, eliminando
+ las repeticiones de elem seguidas
+N unifica con el numero de repeticiones 
+consecutivas + 1.
+
+*/
+
 vecesRepetido(X, [Y | Resto], 1, [Y | Resto]) :- 
   X \= Y.
 
