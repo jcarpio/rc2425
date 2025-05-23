@@ -3,3 +3,6 @@ Ejercicios de Representación del Conocimiento curso 2024-2025
 
 ## GPT para programación en Prolog
 https://chatgpt.com/g/g-X9F3zVsg1-enkire-dr-jose-carpio-profesor-declarativo
+
+## Map (higher-order function)
+https://en.wikipedia.org/wiki/Map_(higher-order_function)
