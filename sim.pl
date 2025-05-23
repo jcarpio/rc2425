@@ -1,3 +1,5 @@
+:- use_module(library(clpfd)).
+
 slots_per_week(35).
 
 slots_per_day(7).
@@ -26,3 +28,51 @@ classes(Classes) :-
 
 teachers(Teachers) :-
         setof(T, C^S^N^class_subject_teacher_times(C,S,T,N), Teachers).
+		
+		
+pairs_slots(Ps, Vs) :-
+        pairs_values(Ps, Vs0),
+        append(Vs0, Vs).
+
+
+requirements_variables(Rs, Vars) :-
+        requirements(Rs),
+        pairs_slots(Rs, Vars),
+        slots_per_week(SPW),
+        Max #= SPW - 1,
+        Vars ins 0..Max,
+        maplist(constrain_subject, Rs),
+        classes(Classes),
+        teachers(Teachers),
+        rooms(Rooms),
+        maplist(constrain_teacher(Rs), Teachers),
+        maplist(constrain_class(Rs), Classes),
+        maplist(constrain_room(Rs), Rooms).		
+		
+		
+constrain_subject(req(Class,Subj,_Teacher,_Num)-Slots) :-
+        strictly_ascending(Slots), % break symmetry
+        maplist(slot_quotient, Slots, Qs0),
+        findall(F-S, coupling(Class,Subj,F,S), Cs),
+        maplist(slots_couplings(Slots), Cs),
+        pairs_values(Cs, Seconds0),
+        sort(Seconds0, Seconds),
+        list_without_nths(Qs0, Seconds, Qs),
+        strictly_ascending(Qs).
+
+slot_quotient(S, Q) :-
+        slots_per_day(SPD),
+        Q #= S // SPD.
+				
+slots_couplings(Slots, F-S) :-
+        nth0(F, Slots, S1),
+        nth0(S, Slots, S2),
+        S2 #= S1 + 1.
+		
+% list_without_nths(Es0, Ws, Es) :-
+%        phrase(without_(Ws, 0, Es0), Es).
+
+ list_without_nths(Lista, [], Lista).
+ 
+ list_without_nths(Lista, [Cab|Resto], R2):-
+   list_without_nths(Lista, Resto, R), elimina_pos(R, Cab, R2).
