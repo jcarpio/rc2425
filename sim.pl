@@ -1,4 +1,19 @@
+% pack_install(reif).
+
 :- use_module(library(clpfd)).
+:- use_module(library(pairs)).
+:- use_module(library(reif)).
+
+:- dynamic(class_subject_teacher_times/4).
+:- dynamic(coupling/4).
+:- dynamic(teacher_freeday/2).
+:- dynamic(slots_per_day/1).
+:- dynamic(slots_per_week/1).
+:- dynamic(class_freeslot/2).
+:- dynamic(room_alloc/4).
+
+:- discontiguous(class_subject_teacher_times/4).
+:- discontiguous(class_freeslot/2).
 
 slots_per_week(35).
 
@@ -14,6 +29,12 @@ class_subject_teacher_times('1a', bio, bio1, 2).
 class_subject_teacher_times('1a', ph, fiz1, 2).
 class_subject_teacher_times('1a', f, rai1, 2).
 class_subject_teacher_times('1a', lat, atvz1, 3).
+
+class_freeslot('1a', 0).
+class_freeslot('1a', 1).
+
+teacher_freeday(mat1, 4).
+teacher_freehour(mat1, 0).
 
 requirements(Rs) :-
         Goal = class_subject_teacher_times(Class,Subject,Teacher,Number),
@@ -44,10 +65,10 @@ requirements_variables(Rs, Vars) :-
         maplist(constrain_subject, Rs),
         classes(Classes),
         teachers(Teachers),
-        rooms(Rooms),
+        % rooms(Rooms),
         maplist(constrain_teacher(Rs), Teachers),
-        maplist(constrain_class(Rs), Classes),
-        maplist(constrain_room(Rs), Rooms).		
+        maplist(constrain_class(Rs), Classes).
+        % maplist(constrain_room(Rs), Rooms).		
 		
 		
 constrain_subject(req(Class,Subj,_Teacher,_Num)-Slots) :-
@@ -59,7 +80,31 @@ constrain_subject(req(Class,Subj,_Teacher,_Num)-Slots) :-
         sort(Seconds0, Seconds),
         list_without_nths(Qs0, Seconds, Qs),
         strictly_ascending(Qs).
+		
+constrain_class(Rs, Class) :-
+        tfilter(class_req(Class), Rs, Sub),
+        pairs_slots(Sub, Vs),
+        all_different(Vs),
+        findall(S, class_freeslot(Class,S), Frees),
+        maplist(all_diff_from(Vs), Frees).
 
+all_diff_from(Vs, F) :- maplist(#\=(F), Vs).		
+
+constrain_teacher(Rs, Teacher) :-
+        tfilter(teacher_req(Teacher), Rs, Sub),
+        pairs_slots(Sub, Vs),
+        all_different(Vs),
+        findall(F, teacher_freeday(Teacher, F), Fs),
+        maplist(slot_quotient, Vs, Qs),
+        maplist(all_diff_from(Qs), Fs),
+		findall(H, teacher_freehour(Teacher, H), Hs),
+        maplist(slot_mod, Vs, Ms),
+		maplist(all_diff_from(Ms), Hs).
+		
+slot_mod(S, Q) :-
+   slots_per_day(SPD),
+   Q #= S mod SPD.
+		
 slot_quotient(S, Q) :-
         slots_per_day(SPD),
         Q #= S // SPD.
@@ -72,10 +117,15 @@ slots_couplings(Slots, F-S) :-
 % list_without_nths(Es0, Ws, Es) :-
 %        phrase(without_(Ws, 0, Es0), Es).
 
+
  list_without_nths(Lista, [], Lista).
  
  list_without_nths(Lista, [Cab|Resto], R2):-
    list_without_nths(Lista, Resto, R), elimina_pos(R, Cab, R2).
+   
+            
+%:- list_without_nths("abcd", [3], "abc").
+%:- list_without_nths("abcd", [1,2], "ad").    
 
 /*  
  elimina_pos(+Lista, +Pos, -R)
@@ -90,6 +140,10 @@ slots_couplings(Slots, F-S) :-
  
  elimina_pos([Cab|Resto], Pos, [Cab|R]):- Pos > 0, Pos2 #= Pos - 1,
    elimina_pos(Resto, Pos2, R).
-            
-%:- list_without_nths("abcd", [3], "abc").
-%:- list_without_nths("abcd", [1,2], "ad"). 
+   
+strictly_ascending(Ls) :- chain(#<, Ls).
+
+class_req(C0, req(C1,_S,_T,_N)-_, T) :- =(C0, C1, T).
+
+teacher_req(T0, req(_C,_S,T1,_N)-_, T) :- =(T0,T1,T).   
+
