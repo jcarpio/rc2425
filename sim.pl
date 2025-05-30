@@ -3,6 +3,7 @@
 :- use_module(library(clpfd)).
 :- use_module(library(pairs)).
 :- use_module(library(reif)).
+:- use_module(library(persistency)).
 
 :- dynamic(class_subject_teacher_times/4).
 :- dynamic(coupling/4).
@@ -145,5 +146,53 @@ strictly_ascending(Ls) :- chain(#<, Ls).
 
 class_req(C0, req(C1,_S,_T,_N)-_, T) :- =(C0, C1, T).
 
-teacher_req(T0, req(_C,_S,T1,_N)-_, T) :- =(T0,T1,T).   
+teacher_req(T0, req(_C,_S,T1,_N)-_, T) :- =(T0,T1,T). 
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   Relate teachers and classes to list of days.
+
+   Each day is a list of subjects (for classes), and a list of
+   class/subject terms (for teachers). The predicate days_variables/2
+   yields a list of days with the right dimensions, where each element
+   is a free variable.
+
+   We use the atom 'free' to denote a free slot, and the compound terms
+   class_subject(C, S) and subject(S) to denote classes/subjects.
+   This clean symbolic distinction is used to support subjects
+   that are called 'free', and to improve generality and efficiency.
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+
+days_variables(Days, Vs) :-
+        slots_per_week(SPW),
+        slots_per_day(SPD),
+        NumDays #= SPW // SPD,
+        length(Days, NumDays),
+        length(Day, SPD),
+        maplist(same_length(Day), Days),
+        append(Days, Vs).
+		
+class_days(Rs, Class, Days) :-
+        days_variables(Days, Vs),
+        tfilter(class_req(Class), Rs, Sub),
+        foldl(v(Sub), Vs, 0, _).
+
+v(Rs, V, N0, N) :-
+        (   member(req(_,Subject,_,_)-Times, Rs),
+            member(N0, Times) -> V = subject(Subject)
+        ;   V = free
+        ),
+        N #= N0 + 1.
+
+teacher_days(Rs, Teacher, Days) :-
+        days_variables(Days, Vs),
+        tfilter(teacher_req(Teacher), Rs, Sub),
+        foldl(v_teacher(Sub), Vs, 0, _).
+
+v_teacher(Rs, V, N0, N) :-
+        (   member(req(C,Subj,_,_)-Times, Rs),
+            member(N0, Times) -> V = class_subject(C, Subj)
+        ;   V = free
+        ),
+        N #= N0 + 1.		
 
